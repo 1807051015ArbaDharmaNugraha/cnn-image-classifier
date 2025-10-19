@@ -7,6 +7,7 @@ from PIL import Image
 # ===============================================
 # Judul dan deskripsi aplikasi
 # ===============================================
+st.set_page_config(page_title="CNN Image Classifier", layout="wide")
 st.title("Klasifikasi Gambar Kendaraan (Model CNN Asli)")
 st.write("""
 Aplikasi ini menggunakan model CNN hasil training untuk mengklasifikasikan gambar **Mobil**, **Motor**, dan **Sepeda**.
@@ -31,25 +32,30 @@ def load_my_model():
 model, labels = load_my_model()
 
 # ===============================================
-# Upload gambar
+# Sidebar untuk upload gambar
 # ===============================================
-uploaded_file = st.file_uploader(
-    "Upload gambar (.jpg/.jpeg/.png)",
+st.sidebar.header("Upload Gambar")
+uploaded_file = st.sidebar.file_uploader(
+    "Pilih gambar (.jpg/.jpeg/.png)",
     type=["jpg", "jpeg", "png"]
 )
 
 # ===============================================
-# Proses prediksi
+# Tampilkan gambar dan lakukan prediksi
 # ===============================================
 if uploaded_file is not None:
-    # Tampilkan gambar
     img = Image.open(uploaded_file)
+    
+    # Tampilkan di sidebar
+    st.sidebar.image(img, caption="Preview Gambar", use_column_width=True)
+    
+    # Tampilkan di halaman utama
     st.image(img, caption="Gambar yang di-upload", use_column_width=True)
 
     if model is not None:
-        # Preprocessing gambar agar cocok dengan model
-        img = img.resize((128, 128))
-        img_array = image.img_to_array(img)
+        # Preprocessing gambar
+        img_resized = img.resize((128, 128))
+        img_array = image.img_to_array(img_resized)
         img_array = np.expand_dims(img_array, axis=0) / 255.0
 
         # Prediksi
@@ -57,11 +63,11 @@ if uploaded_file is not None:
         pred_label = labels[np.argmax(preds)]
         confidence = np.max(preds) * 100
 
-        # Tampilkan hasil
+        # Tampilkan hasil prediksi
         st.subheader("🔍 Hasil Prediksi")
         st.write(f"**Label:** {pred_label}")
         st.write(f"**Tingkat Keyakinan:** {confidence:.2f}%")
     else:
         st.warning("Model belum dimuat, tidak bisa melakukan prediksi.")
 else:
-    st.info("Silakan upload gambar terlebih dahulu.")
+    st.info("Silakan upload gambar terlebih dahulu di sidebar.")
