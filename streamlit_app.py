@@ -44,19 +44,22 @@ uploaded_file = st.sidebar.file_uploader(
 # Lakukan prediksi
 # ===============================================
 if uploaded_file is not None:
-    # Buka gambar dan pastikan RGB
-    img = Image.open(uploaded_file).convert("RGB")
-    
-    # (Opsional) tampilkan di halaman utama
-    st.image(img, caption="Gambar yang di-upload", use_column_width=True)
+    # Buka gambar dan konversi ke grayscale
+    img = Image.open(uploaded_file).convert("L")  # L = grayscale
+
+    # Tampilkan gambar di halaman utama
+    st.image(img, caption="Gambar yang di-upload", use_container_width=True)
 
     if model is not None:
-        # Preprocessing sesuai model
-        img_resized = img.resize((128, 128))
-        img_array = image.img_to_array(img_resized)
-        img_array = np.expand_dims(img_array, axis=0) / 255.0
-
         try:
+            # Resize sesuai training
+            img_resized = img.resize((48, 48))
+
+            # Konversi ke array dan flatten
+            img_array = image.img_to_array(img_resized)
+            img_array = img_array.flatten()  # shape (2304,)
+            img_array = np.expand_dims(img_array, axis=0) / 255.0  # shape (1, 2304)
+
             # Prediksi
             preds = model.predict(img_array)
             pred_label = labels[np.argmax(preds)]
