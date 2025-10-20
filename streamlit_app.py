@@ -90,7 +90,7 @@ if uploaded_file is not None and model is not None:
         pred_label = labels[np.argmax(preds)]
         confidence = np.max(preds) * 100
 
-        st.subheader("🔍 Hasil Prediksi")
+        st.subheader("Hasil Prediksi")
         st.write(f"**Label:** {pred_label}")
         st.write(f"**Tingkat Keyakinan:** {confidence:.2f}%")
     except Exception as e:
