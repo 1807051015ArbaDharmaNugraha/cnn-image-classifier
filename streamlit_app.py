@@ -8,10 +8,9 @@ from PIL import Image
 # Judul dan deskripsi aplikasi
 # ===============================================
 st.set_page_config(page_title="CNN Image Classifier", layout="wide")
-st.title("Klasifikasi Gambar Kendaraan (Model CNN Asli)")
+st.title("Klasifikasi Gambar Kendaraan (Model CNN Otomatis)")
 st.write("""
-Aplikasi ini menggunakan model CNN hasil training untuk mengklasifikasikan gambar **Mobil**, **Motor**, dan **Sepeda**.
-Pilih gambar di sidebar untuk melihat hasil prediksinya.
+Pilih gambar di sidebar dan aplikasi akan menyesuaikan preprocessing dengan input model secara otomatis.
 """)
 
 # ===============================================
@@ -43,35 +42,58 @@ uploaded_file = st.sidebar.file_uploader(
 # ===============================================
 # Lakukan prediksi
 # ===============================================
-if uploaded_file is not None:
-    # Buka gambar dan konversi ke grayscale
-    img = Image.open(uploaded_file).convert("L")  # L = grayscale
+if uploaded_file is not None and model is not None:
+    # Buka gambar
+    img = Image.open(uploaded_file)
+
+    # ===============================================
+    # Ambil input shape dari model
+    # ===============================================
+    input_shape = model.input_shape  # contoh: (None, 32, 32, 3) atau (None, 2304)
+    
+    if len(input_shape) == 4:
+        # Model CNN 2D
+        _, height, width, channels = input_shape
+
+        # Sesuaikan warna
+        if channels == 1:
+            img = img.convert("L")  # grayscale
+        else:
+            img = img.convert("RGB")  # RGB
+
+        # Resize sesuai model
+        img_resized = img.resize((width, height))
+
+        # Konversi ke array dan normalisasi
+        img_array = image.img_to_array(img_resized)
+        img_array = np.expand_dims(img_array, axis=0) / 255.0
+
+    elif len(input_shape) == 2:
+        # Model dense yang menerima 1D input
+        _, input_len = input_shape
+        img = img.convert("L")  # biasnya grayscale
+        # resize agar total pixel sesuai
+        side = int(np.sqrt(input_len))
+        img_resized = img.resize((side, side))
+        img_array = image.img_to_array(img_resized).flatten()
+        img_array = np.expand_dims(img_array, axis=0) / 255.0
+    else:
+        st.error("Model memiliki input shape tidak dikenal!")
+        st.stop()
 
     # Tampilkan gambar di halaman utama
     st.image(img, caption="Gambar yang di-upload", use_container_width=True)
 
-    if model is not None:
-        try:
-            # Resize sesuai training
-            img_resized = img.resize((48, 48))
+    # Prediksi
+    try:
+        preds = model.predict(img_array)
+        pred_label = labels[np.argmax(preds)]
+        confidence = np.max(preds) * 100
 
-            # Konversi ke array dan flatten
-            img_array = image.img_to_array(img_resized)
-            img_array = img_array.flatten()  # shape (2304,)
-            img_array = np.expand_dims(img_array, axis=0) / 255.0  # shape (1, 2304)
-
-            # Prediksi
-            preds = model.predict(img_array)
-            pred_label = labels[np.argmax(preds)]
-            confidence = np.max(preds) * 100
-
-            # Tampilkan hasil prediksi
-            st.subheader("🔍 Hasil Prediksi")
-            st.write(f"**Label:** {pred_label}")
-            st.write(f"**Tingkat Keyakinan:** {confidence:.2f}%")
-        except Exception as e:
-            st.error(f"Gagal melakukan prediksi: {e}")
-    else:
-        st.warning("Model belum dimuat, prediksi tidak bisa dilakukan.")
+        st.subheader("🔍 Hasil Prediksi")
+        st.write(f"**Label:** {pred_label}")
+        st.write(f"**Tingkat Keyakinan:** {confidence:.2f}%")
+    except Exception as e:
+        st.error(f"Gagal melakukan prediksi: {e}")
 else:
-    st.info("Silakan pilih gambar terlebih dahulu di sidebar.")
+    st.info("Silakan pilih gambar terlebih dahulu di sidebar dan pastikan model berhasil dimuat.")
